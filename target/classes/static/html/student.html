@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App - Student Dashboard</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- STEP 2: AUTH CHECK & BFCACHE KILLER (Prevents accessing via back button after logout) -->
+    <script>
+        // 1. Standard check on normal load
+        if (localStorage.length === 0 && sessionStorage.length === 0) {
+            window.location.replace("index.html");
+        }
+
+        // 2. BFCache (Back-Forward Cache) Killer for Google Chrome Back Button
+        window.addEventListener('pageshow', function(event) {
+            // If the page is loaded from browser history/cache (user pressed back '<-')
+            if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+                if (localStorage.length === 0 && sessionStorage.length === 0) {
+                    window.location.replace("index.html");
+                }
+            }
+        });
+    </script>
+
+    <style>
+        body { 
+            display: block; 
+            padding-top: 80px; /* Space for fixed header */
+            background-color: #f9fafb;
+        }
+
+        .header-bar {
+            background: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgb(0 0 0 / 0.05);
+            width: 100%;
+            position: fixed;
+            top: 0;
+            z-index: 100;
+        }
+
+        /* 20 / 80 Layout Container */
+        .dashboard-layout {
+            max-width: 1400px;
+            margin: 2rem auto;
+            display: flex;
+            gap: 2rem;
+            padding: 0 20px;
+            align-items: flex-start;
+        }
+
+        /* 20% Sidebar section - Flexbox used to push logout to bottom */
+        .sidebar {
+            width: 20%;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            position: sticky;
+            top: 100px; 
+            height: calc(100vh - 130px); /* Stretches to bottom of screen */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar h3 {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1; /* Pushes the logout container down */
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 0.85rem 1rem;
+            color: var(--text-main);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .sidebar-menu a:hover {
+            background: #f3f4f6;
+            color: var(--primary-color);
+        }
+
+        /* Active Menu Item Styling */
+        .sidebar-menu a.active {
+            background: #eef2ff;
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+            /* Adjust padding slightly to account for the border */
+            padding-left: calc(1rem - 4px); 
+        }
+
+        /* Logout button container at the bottom */
+        .logout-container {
+            margin-top: auto;
+            border-top: 1px solid #eee;
+            padding-top: 1rem;
+        }
+
+        /* 80% Main Content section */
+        .main-content {
+            width: 80%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Hide all sections by default, only show the active one */
+        .content-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .card h2 {
+            margin-bottom: 1.5rem;
+            color: var(--text-main);
+            border-bottom: 2px solid #f3f4f6;
+            padding-bottom: 0.5rem;
+        }
+
+        /* Quiz Item Styles */
+        .quiz-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .quiz-item:last-child { border-bottom: none; }
+        .quiz-info h3 { margin-bottom: 5px; color: var(--primary-color); }
+        .btn-take { width: auto; padding: 8px 16px; }
+        
+        /* Table Styles */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th { text-align: left; padding: 12px 8px; border-bottom: 2px solid #eee; color: var(--text-muted); }
+        td { padding: 12px 8px; border-bottom: 1px solid #f9f9f9; }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-error { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <header class="header-bar">
+        <h2>Welcome, <span id="user-display">Student</span>!</h2>
+        <!-- Logout button removed from here -->
+    </header>
+
+    <div class="dashboard-layout">
+        
+        <!-- 20% Sidebar Navigation -->
+        <aside class="sidebar">
+            <h3>Menu</h3>
+            <ul class="sidebar-menu">
+                <!-- Added onclick handlers and active class -->
+                <li><a onclick="switchTab('quizzes-section', this)" class="active">Available Quizzes</a></li>
+                <li><a onclick="switchTab('leaderboard-section', this)">Global Leaderboard</a></li>
+                <li><a onclick="switchTab('attempts-section', this)">My Past Attempts</a></li>
+            </ul>
+            
+            <!-- Logout Button anchored to the bottom -->
+            <div class="logout-container">
+                <button id="logout-btn" onclick="logout()" style="width: 100%; background: #ef4444; color: white;">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- 80% Main Content Area -->
+        <main class="main-content">
+            
+            <!-- Section 1: Available Quizzes (Active by default) -->
+            <section id="quizzes-section" class="card content-section active">
+                <h2>Available Quizzes</h2>
+                <div id="quizzes-container">
+                    <p>Loading quizzes...</p>
+                </div>
+            </section>
+
+            <!-- Section 2: Global Leaderboard -->
+            <section id="leaderboard-section" class="card content-section">
+                <h2>Global Leaderboard</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Quiz</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body"></tbody>
+                </table>
+            </section>
+
+            <!-- Section 3: My Past Attempts -->
+            <section id="attempts-section" class="card content-section">
+                <h2>My Past Attempts & Progress</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Quiz Title</th>
+                            <th>Score Obtained</th>
+                            <th>Total Questions</th>
+                            <th>Percentage</th>
+                            <th>Date & Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attempts-body">
+                        <tr><td colspan="5">Loading your history...</td></tr>
+                    </tbody>
+                </table>
+            </section>
+            
+        </main>
+
+    </div>
+
+    <!-- Central API logic and Dashboard Script -->
+    <script src="../js/api.js"></script>
+    <script src="../js/student.js"></script>
+    
+    <!-- Inline Script for Tab Switching Logic -->
+    <script>
+        function switchTab(sectionId, element) {
+            // 1. Remove active class from all menu links
+            document.querySelectorAll('.sidebar-menu a').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // 2. Add active class to the clicked menu link
+            element.classList.add('active');
+            
+            // 3. Hide all content sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // 4. Show the target content section
+            document.getElementById(sectionId).classList.add('active');
+        }
+
+        // Logout logic
+        function logout() {
+            localStorage.removeItem('userToken'); 
+            localStorage.clear(); 
+            sessionStorage.clear();
+            window.location.replace("index.html"); 
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App - Taking Quiz</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/quiz.css">
+    
+    <!-- STEP 2: AUTH CHECK (Prevents accessing via back button after logout) -->
+    <script>
+        // 1. Standard check on normal load
+        if (localStorage.length === 0 && sessionStorage.length === 0) {
+            window.location.replace("index.html");
+        }
+
+        // 2. BFCache (Back-Forward Cache) Killer for Google Chrome Back Button
+        window.addEventListener('pageshow', function(event) {
+            // If the page is loaded from browser history/cache (user pressed back '<-')
+            if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+                if (localStorage.length === 0 && sessionStorage.length === 0) {
+                    window.location.replace("index.html");
+                }
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="quiz-page-container">
+        <header class="quiz-header">
+            <h2 id="quiz-title-display">Loading Quiz...</h2>
+            <div id="timer" class="timer">Time: 00:00</div>
+        </header>
+
+        <main id="quiz-container" class="quiz-card">
+            <div id="question-area">
+                <p class="loading-text">Fetching questions...</p>
+            </div>
+            
+            <div class="quiz-footer">
+                <span id="progress">Question 0 of 0</span>
+                <button id="next-btn" style="width: auto; display: none;">Next Question</button>
+            </div>
+        </main>
+
+        <!-- Result Modal -->
+        <div id="result-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2>Quiz Finished!</h2>
+                <p id="final-score" style="font-size: 1.5rem; margin: 1rem 0;"></p>
+                <button onclick="window.location.href='student.html'">Back to Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>

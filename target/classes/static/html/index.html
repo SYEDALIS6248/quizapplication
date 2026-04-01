@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App - Authentication</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .auth-container { max-width: 450px; width: 90%; margin: 2rem auto; }
+        .name-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .password-wrapper { position: relative; display: flex; align-items: center; }
+        .password-wrapper input { padding-right: 40px; width: 100%; }
+        .toggle-icon { position: absolute; right: 12px; cursor: pointer; color: #6b7280; }
+        
+        /* Strength Meter Styles */
+        .strength-meter { height: 4px; background: #e5e7eb; margin-top: 8px; border-radius: 2px; overflow: hidden; }
+        .strength-bar { height: 100%; width: 0; transition: 0.3s ease; }
+        .strength-label { font-size: 0.75rem; margin-top: 4px; display: block; font-weight: 600; }
+        
+        .rules-list { font-size: 0.7rem; margin-top: 8px; list-style: none; padding: 0; }
+        .rule-item { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
+        .rule-item.valid { color: #10b981; }
+        .rule-item.invalid { color: #ef4444; }
+        
+        .match-feedback { font-size: 0.75rem; margin-top: 4px; font-weight: 500; }
+        .hidden { display: none !important; }
+
+        .forgot-pass-link {
+            display: block; text-align: right; font-size: 0.8rem;
+            margin-top: 5px; color: var(--primary-color);
+            cursor: pointer; text-decoration: none; font-weight: 500;
+        }
+        .forgot-pass-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body class="auth-bg">
+    <div class="container auth-container">
+        <h1 id="form-title">Login</h1>
+        
+        <form id="auth-form">
+            <!-- Registration Only Fields -->
+            <div id="registration-fields" class="hidden">
+                <div class="name-row">
+                    <div class="form-group">
+                        <label>First Name</label>
+                        <input type="text" id="first-name" placeholder="John">
+                    </div>
+                    <div class="form-group">
+                        <label>Last Name</label>
+                        <input type="text" id="last-name" placeholder="Doe">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number</label>
+                    <input type="tel" id="mobile" placeholder="10-digit mobile" pattern="[0-9]{10}">
+                </div>
+            </div>
+
+            <!-- Common Username Field -->
+            <div class="form-group">
+                <label id="username-label" for="username">Username</label>
+                <input type="text" id="username" placeholder="Enter username" required>
+            </div>
+
+            <!-- Password with Toggle -->
+            <div class="form-group" style="margin-bottom: 5px;">
+                <label id="pass-label">Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" placeholder="Enter password" required>
+                    <i class="fa-solid fa-eye toggle-icon" onclick="toggleVisibility('password', this)"></i>
+                </div>
+                
+                <!-- Registration & Reset: Strength & Rules -->
+                <div id="reg-password-extras" class="hidden">
+                    <div class="strength-meter"><div id="strength-bar" class="strength-bar"></div></div>
+                    <span id="strength-label" class="strength-label">Strength</span>
+                    <ul class="rules-list">
+                        <li id="rule-caps" class="rule-item invalid"><i class="fa-solid fa-circle-xmark"></i> Starts with Capital Letter</li>
+                        <li id="rule-len" class="rule-item invalid"><i class="fa-solid fa-circle-xmark"></i> 8+ Characters</li>
+                        <li id="rule-spec" class="rule-item invalid"><i class="fa-solid fa-circle-xmark"></i> Special Character</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Forgot Password Link (Only in Login Mode) -->
+            <div id="forgot-pass-container">
+                <span class="forgot-pass-link" id="forgot-btn">Forgot Password?</span>
+            </div>
+
+            <!-- Registration & Reset: Confirmation -->
+            <div id="confirm-field" class="form-group hidden" style="margin-top: 15px;">
+                <label>Confirm Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="confirm-password" placeholder="Re-enter password">
+                    <i class="fa-solid fa-eye toggle-icon" onclick="toggleVisibility('confirm-password', this)"></i>
+                </div>
+                <div id="match-msg" class="match-feedback"></div>
+            </div>
+
+            <!-- Admin Toggle (Registration Only) -->
+            <div class="form-group" id="admin-group" style="display: none; flex-direction: row; align-items: center; gap: 8px; margin-top: 15px;">
+                <input type="checkbox" id="isAdmin">
+                <label for="isAdmin" style="margin-bottom: 0;">Register as Admin</label>
+            </div>
+            
+            <button type="submit" id="submit-btn" style="margin-top: 15px;">Login</button>
+        </form>
+
+        <span class="toggle-link" id="toggle-auth">Don't have an account? Register</span>
+    </div>
+
+    <!-- Centralized API and Auth logic -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+</body>
+</html>

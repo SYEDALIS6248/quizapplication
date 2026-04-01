@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App - Admin Dashboard</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- STEP 2: AUTH CHECK & BFCACHE KILLER (Prevents accessing via back button after logout) -->
+    <script>
+        // 1. Standard check on normal load
+        if (localStorage.length === 0 && sessionStorage.length === 0) {
+            window.location.replace("index.html");
+        }
+
+        // 2. BFCache (Back-Forward Cache) Killer for Google Chrome Back Button
+        window.addEventListener('pageshow', function(event) {
+            // If the page is loaded from browser history/cache (user pressed back '<-')
+            if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+                if (localStorage.length === 0 && sessionStorage.length === 0) {
+                    window.location.replace("index.html");
+                }
+            }
+        });
+    </script>
+    
+    <style>
+        body { 
+            display: block; 
+            padding-top: 80px; /* Space for fixed header */
+            background-color: #f9fafb;
+        }
+
+        .header-bar {
+            background: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgb(0 0 0 / 0.05);
+            width: 100%;
+            position: fixed;
+            top: 0;
+            z-index: 100;
+        }
+
+        /* 20 / 80 Layout Container */
+        .dashboard-layout {
+            max-width: 1400px;
+            margin: 2rem auto;
+            display: flex;
+            gap: 2rem;
+            padding: 0 20px;
+            align-items: flex-start;
+        }
+
+        /* 20% Sidebar section */
+        .sidebar {
+            width: 20%;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            position: sticky;
+            top: 100px; 
+            height: calc(100vh - 130px); /* Stretches to bottom of screen */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar h3 {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1; /* Pushes the logout container down */
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 0.85rem 1rem;
+            color: var(--text-main);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .sidebar-menu a:hover {
+            background: #f3f4f6;
+            color: var(--primary-color);
+        }
+
+        .sidebar-menu a.active {
+            background: #eef2ff;
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+            padding-left: calc(1rem - 4px); 
+        }
+
+        .logout-container {
+            margin-top: auto;
+            border-top: 1px solid #eee;
+            padding-top: 1rem;
+        }
+
+        /* 80% Main Content section */
+        .main-content {
+            width: 80%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Tab Switching Visibility */
+        .content-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Rest of Admin Styles */
+        .quizzes-list-container { margin-top: 2rem; border-top: 2px solid #eee; padding-top: 1rem; }
+        .quiz-manage-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem; background: #fff; border: 1px solid #e5e7eb;
+            border-radius: 8px; margin-bottom: 10px; transition: transform 0.2s;
+        }
+        .quiz-manage-item:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .action-btns { display: flex; gap: 8px; }
+        .btn-edit { background-color: var(--primary-color); width: auto; padding: 6px 14px; font-size: 0.85rem; }
+        .btn-delete { background-color: var(--error); width: auto; padding: 6px 14px; font-size: 0.85rem; }
+
+        /* Modal CSS */
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: white; padding: 2rem; border-radius: 12px;
+            width: 90%; max-width: 500px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+
+        #questions-manager-list h4 {
+            margin-bottom: 1rem;
+            color: var(--text-main);
+            border-bottom: 2px solid var(--primary-color);
+            display: inline-block;
+        }
+        
+        .admin-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header-bar">
+        <h2>Admin Panel: <span id="admin-name">Admin</span></h2>
+    </header>
+
+    <div class="dashboard-layout">
+        
+        <!-- 20% Sidebar Navigation -->
+        <aside class="sidebar">
+            <h3>Admin Menu</h3>
+            <ul class="sidebar-menu">
+                <li><a id="nav-create" onclick="switchTab('create-quiz-section', this)" class="active">Create New Quiz</a></li>
+                <li><a id="nav-manage" onclick="switchTab('manage-section', this)">Manage Existing Quizzes</a></li>
+                <!-- Hidden navigation reference for when modifying questions -->
+                <li style="display:none;"><a id="nav-questions" onclick="switchTab('add-questions-section', this)">Edit Questions</a></li>
+            </ul>
+            
+            <!-- Logout Button anchored to the bottom -->
+            <div class="logout-container">
+                <button id="logout-btn" onclick="logout()" style="width: 100%; background: #ef4444; color: white;">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- 80% Main Content Area -->
+        <main class="main-content">
+            
+            <!-- Section 1: Create Quiz -->
+            <section id="create-quiz-section" class="admin-card content-section active">
+                <h2>Create New Quiz</h2>
+                <form id="quiz-form">
+                    <div class="form-group">
+                        <label>Quiz Title</label>
+                        <input type="text" id="quiz-title" placeholder="e.g., Java Basics" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" id="quiz-desc" placeholder="Brief overview of the quiz" required>
+                    </div>
+                    <button type="submit">Create Quiz & Add Questions</button>
+                </form>
+            </section>
+
+            <!-- Section 2: Manage Existing Quizzes -->
+            <section id="manage-section" class="admin-card content-section">
+                <h2>Manage Existing Quizzes</h2>
+                <div id="quizzes-list-area" class="quizzes-list-container">
+                    <p>Loading quizzes...</p>
+                </div>
+            </section>
+
+            <!-- Section 3: Add/Edit Questions -->
+            <section id="add-questions-section" class="admin-card content-section">
+                <h2>Manage Questions for: <span id="active-quiz-name" style="color: var(--primary-color);"></span></h2>
+                <form id="question-form">
+                    <div class="form-group">
+                        <label>Question Text</label>
+                        <input type="text" id="q-text" required>
+                    </div>
+                    <div class="grid-options" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group"><label>Option A</label><input type="text" id="q-a" required></div>
+                        <div class="form-group"><label>Option B</label><input type="text" id="q-b" required></div>
+                        <div class="form-group"><label>Option C</label><input type="text" id="q-c" required></div>
+                        <div class="form-group"><label>Option D</label><input type="text" id="q-d" required></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Correct Option</label>
+                        <select id="q-correct" required style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; outline: none; background: white;">
+                            <option value="A">Option A</option>
+                            <option value="B">Option B</option>
+                            <option value="C">Option C</option>
+                            <option value="D">Option D</option>
+                        </select>
+                    </div>
+                    <button type="submit" style="background: var(--success);">Add Question</button>
+                    <button type="button" id="finish-btn" style="margin-top: 10px; background: var(--text-muted);">Finish & Back to Quizzes</button>
+                </form>
+                
+                <div id="questions-manager-list" class="quizzes-list-container"></div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Edit Modal for Quiz Metadata (Title/Desc) -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <h3>Edit Quiz Details</h3>
+            <form id="edit-quiz-form">
+                <input type="hidden" id="edit-quiz-id">
+                <div class="form-group">
+                    <label>New Title</label>
+                    <input type="text" id="edit-quiz-title" required>
+                </div>
+                <div class="form-group">
+                    <label>New Description</label>
+                    <input type="text" id="edit-quiz-desc" required>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 1rem;">
+                    <button type="submit">Update Quiz</button>
+                    <button type="button" onclick="closeEditModal()" style="background: #ccc;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/admin.js"></script>
+    
+    <!-- Inline Script for Tab Switching Logic -->
+    <script>
+        function switchTab(sectionId, element) {
+            // Remove active class from all menu links
+            document.querySelectorAll('.sidebar-menu a').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Add active class to the clicked menu link (if an element is provided)
+            if (element) {
+                element.classList.add('active');
+            }
+            
+            // Hide all content sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show the target content section
+            document.getElementById(sectionId).classList.add('active');
+        }
+
+        // Logout logic
+        function logout() {
+            localStorage.removeItem('userToken'); 
+            localStorage.clear(); 
+            sessionStorage.clear();
+            window.location.replace("index.html"); 
+        }
+    </script>
+</body>
+</html>
