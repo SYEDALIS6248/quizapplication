@@ -27,8 +27,11 @@ Version Control: Git & GitHub
 📂 Project Structure
 
 quizapplication/
+
 ├── html/          # HTML pages (index.html, admin.html, student.html, quiz.html)
+
 ├── css/           # Stylesheets (global.css, admin.css, quiz.css)
+
 └── js/            # JavaScript logic (auth.js, admin.js, student.js, api.js)
 
 
