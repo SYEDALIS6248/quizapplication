@@ -35,6 +35,12 @@ quizapplication/
 └── js/            # JavaScript logic (auth.js, admin.js, student.js, api.js)
 
 
+ADMIN USER / PASSWORD
+
+USERNAME : Admin
+PASSWORD  : Admin@123
+
+
 💻 How to Run Locally
 
 Clone this repository:
